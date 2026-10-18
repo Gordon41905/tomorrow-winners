@@ -32,13 +32,13 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 <div id="games"></div>
 <div class="ftr">Updates every 30 seconds · schedule, scores and lines from ESPN (DraftKings) · "Open" = first DraftKings line, posted at the May schedule release</div>
 <script>
-const APP_VERSION="2026-10-18.8",DATE="20261018";
+const APP_VERSION="2026-10-18.9",DATE="20261018";
 const SRC=[["NFL","https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates="+DATE],
  ["College","https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates="+DATE+"&limit=300&groups=80"]];
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let lastOk=null,cfbCount=null,OPEN={};
 async function checkVersion(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();
- if(v&&v!==APP_VERSION){const k="reloaded_"+v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,"1");location.replace(location.pathname+"?v="+encodeURIComponent(v));}}}catch(e){}}
+ if(v&&v!==APP_VERSION){const k="reload_"+v;let st={n:0,t:0};try{st=JSON.parse(sessionStorage.getItem(k)||'{"n":0,"t":0}')}catch(e){}if(st.n<5&&Date.now()-st.t>45000){st.n++;st.t=Date.now();try{sessionStorage.setItem(k,JSON.stringify(st))}catch(e){}location.replace(location.pathname+"?v="+encodeURIComponent(v)+"&r="+Date.now());}}}catch(e){}}
 const tf=(d,z)=>d.toLocaleTimeString("en-US",{timeZone:z,hour:"numeric",minute:"2-digit"});
 function parse(lg,e){const c=e.competitions[0],t=c.competitors||[],h=t.find(x=>x.homeAway==="home")||t[1],a=t.find(x=>x.homeAway==="away")||t[0],st=e.status.type;
  const tm=x=>({full:x.team.displayName||"",name:x.team.shortDisplayName||x.team.displayName,ab:x.team.abbreviation,score:x.score!=null&&x.score!==""?Number(x.score):null,winner:!!x.winner});
