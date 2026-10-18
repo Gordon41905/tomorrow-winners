@@ -1,6 +1,6 @@
 {
  "fetched_pt": "2026-10-17 05:21 PM PT",
- "source": "ESPN core odds API, DraftKings opening line (provider 100)",
+ "source": "DraftKings opening line posted at the May 2026 schedule release (ESPN core odds API 'open' fields), cross-checked vs SportsbookReview and VegasInsider",
  "games": {
   "401872996": {
    "game": "HOU VS JAX",
@@ -45,7 +45,8 @@
   "401873004": {
    "game": "ARI @ LAR",
    "open_spread": "LAR -13.5",
-   "open_total": 46.5
+   "open_total": 47.5,
+   "note": "ESPN core API open total 46.5; corrected to 47.5 per SportsbookReview (DraftKings May 14 openers) and VegasInsider Open column"
   },
   "401873006": {
    "game": "LAC @ KC",
