@@ -1,0 +1,74 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><title>Sunday Winners · Oct 18</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d1015;color:#eef2f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"DejaVu Sans",Arial,sans-serif;padding:14px;max-width:640px;margin:0 auto}
+.hdr{background:#161c26;border-radius:16px;padding:14px 14px 12px}
+h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 10px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#1fbf5f;margin-right:6px;animation:p 2s infinite}@keyframes p{50%{opacity:.3}}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.st{background:#0d1118;border-radius:12px;padding:10px}
+.k{font-size:11px;color:#8b97a8;font-weight:700;letter-spacing:1px}.kv{font-size:22px;font-weight:800;margin-top:2px}
+.err{background:#3a1114;border:2px solid #e5484d;color:#ffd0d2;border-radius:12px;padding:12px;margin-top:10px;font-size:14px;font-weight:700}
+.gh{font-size:19px;font-weight:800;margin:24px 0 4px;padding-bottom:6px;border-bottom:3px solid;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}.gh .cnt{font-size:13px;color:#8b97a8;font-weight:700;margin-left:4px}.chev{font-size:16px;color:#8b97a8;transition:transform .2s;padding:0 4px}.gh.closed .chev{transform:rotate(-90deg)}[hidden]{display:none!important}
+.card{background:#171d27;border-radius:14px;border-left:6px solid #5b6575;margin-top:10px;padding:12px 14px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.lg{font-size:11px;font-weight:800;color:#8b97a8;letter-spacing:1px}
+.pill{color:#fff;font-size:11px;font-weight:800;border-radius:6px;padding:4px 8px;letter-spacing:.5px;white-space:nowrap}
+.tm{display:flex;justify-content:space-between;align-items:baseline;font-size:17px;font-weight:700;margin-top:6px;gap:10px}.tm .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tm .s{font-size:19px;font-weight:800;flex:none}
+.tm.w{color:#39e27d}.tm.l{color:#8b97a8}
+.tx{font-size:13px;color:#a3aec0;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.win{font-size:14px;font-weight:800;color:#39e27d;margin-top:6px}.tie{color:#f0b429}
+.none{font-size:13px;color:#8b97a8;margin-top:8px}
+.ftr{margin-top:22px;font-size:12px;color:#7f8ba0;line-height:1.5;text-align:center}
+</style></head><body>
+<div class="hdr"><h1>Sunday Winners · Oct 18</h1><div class="ts" id="ts"><span class="dot"></span>Loading games…</div>
+<div class="g3"><div class="st"><div class="k">FINAL</div><div class="kv" style="color:#39e27d" id="n_f">–</div></div>
+<div class="st"><div class="k">LIVE</div><div class="kv" style="color:#ff6b6b" id="n_l">–</div></div>
+<div class="st"><div class="k">UPCOMING</div><div class="kv" style="color:#7fa6ff" id="n_u">–</div></div></div>
+<div id="err"></div></div>
+<div id="games"></div>
+<div class="ftr">Updates every 30 seconds · schedule and scores from ESPN</div>
+<script>
+const APP_VERSION="2026-10-18.1",DATE="20261018";
+const SRC=[["NFL","https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates="+DATE],
+ ["College","https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates="+DATE+"&limit=300&groups=80"]];
+const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let lastOk=null,cfbCount=null;
+async function checkVersion(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();
+ if(v&&v!==APP_VERSION){const k="reloaded_"+v;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,"1");location.replace(location.pathname+"?v="+encodeURIComponent(v));}}}catch(e){}}
+const tf=(d,z)=>d.toLocaleTimeString("en-US",{timeZone:z,hour:"numeric",minute:"2-digit"});
+function parse(lg,e){const c=e.competitions[0],t=c.competitors||[],h=t.find(x=>x.homeAway==="home")||t[1],a=t.find(x=>x.homeAway==="away")||t[0],st=e.status.type;
+ const tm=x=>({name:x.team.shortDisplayName||x.team.displayName,ab:x.team.abbreviation,score:x.score!=null&&x.score!==""?Number(x.score):null,winner:!!x.winner});
+ return{id:e.id,lg,start:new Date(e.date),state:st.state,completed:!!st.completed,detail:st.shortDetail||st.detail||"",name:st.name,home:tm(h),away:tm(a),neutral:!!c.neutralSite,venue:c.venue?.fullName||""};}
+async function fetchAll(){const G=[],errs=[];await Promise.all(SRC.map(async([lg,u])=>{try{const r=await fetch(u+"&t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);const d=await r.json();const ev=d.events||[];if(lg==="College")cfbCount=ev.length;ev.forEach(e=>G.push(parse(lg,e)));}catch(e){errs.push(lg+" scores unavailable ("+e.message+")");}}));return[G,errs];}
+function sec(g){if(g.state==="post"||g.completed)return 0;if(g.state==="in")return 1;return 2;}
+const SECN=["✅ Final","🔴 Live","🗓️ Upcoming"],SECC=["#3fae7a","#e5484d","#2b6cff"],SECK=["final","live","upcoming"];
+const COLL=(()=>{try{return JSON.parse(localStorage.getItem("collapsed")||"{}")}catch(e){return{}}})();
+function section(k,title,color,body,n){const c=!!COLL[k];return `<div class="gh${c?" closed":""}" data-k="${k}" role="button" style="border-color:${color}"><span>${title} <span class="cnt">${n}</span></span><span class="chev">▾</span></div><div class="sb" data-k="${k}"${c?" hidden":""}>${body}</div>`}
+function toggleSec(k){COLL[k]=!COLL[k];if(!COLL[k])delete COLL[k];try{localStorage.setItem("collapsed",JSON.stringify(COLL))}catch(e){}document.querySelectorAll(`[data-k="${k}"]`).forEach(e=>{if(e.classList.contains("gh"))e.classList.toggle("closed",!!COLL[k]);else e.hidden=!!COLL[k];});}
+document.addEventListener("click",e=>{const g=e.target.closest(".gh[data-k]");if(g)toggleSec(g.dataset.k);});
+function card(g){const s=sec(g),fin=s===0,live=s===1,pre=s===2,a=g.away,h=g.home;
+ const canceled=/POSTPONED|CANCEL|SUSPENDED/.test(g.name);
+ let win=null,tie=false;if(fin&&!canceled&&a.score!=null&&h.score!=null){if(a.score>h.score)win=a;else if(h.score>a.score)win=h;else tie=true;}
+ const cls=x=>win?(x===win?" w":" l"):"";
+ const color=canceled?"#8a63d2":fin?(tie?"#f0b429":"#1fbf5f"):live?"#e5484d":"#2b6cff";
+ const pill=canceled?"NO GAME":fin?"FINAL":live?"LIVE":"SCHEDULED";
+ const kick=`${tf(g.start,"America/Los_Angeles")} PT · ${tf(g.start,"America/New_York")} ET`;
+ const sc=x=>pre||x.score==null?"":`<span class="s">${x.score}</span>`;
+ const where=g.neutral&&g.venue?` · ${esc(g.venue)}`:"";
+ const info=live?`${esc(g.detail)} · kicked off ${tf(g.start,"America/Los_Angeles")} PT`:fin?`${canceled?esc(g.detail)+" · ":""}Kicked off ${kick}${where}`:`Kickoff ${kick}${where}`;
+ const res=win?`<div class="win">Winner: ${esc(win.name)}</div>`:tie?`<div class="win tie">Tie game ${a.score}–${h.score}</div>`:"";
+ return `<div class="card" style="border-left-color:${color}"><div class="top"><span class="lg">${g.lg.toUpperCase()}</span><span class="pill" style="background:${color}">${pill}</span></div>
+ <div class="tm${cls(a)}"><span class="n">${esc(a.name)}</span>${sc(a)}</div><div class="tm${cls(h)}"><span class="n">${g.neutral?"vs ":"@ "}${esc(h.name)}</span>${sc(h)}</div>
+ <div class="tx">${info}</div>${res}</div>`;}
+function render(G){const S=[[],[],[]];G.sort((x,y)=>x.start-y.start||(x.lg<y.lg?-1:1));for(const g of G)S[sec(g)].push(g);
+ S[0].reverse();
+ $("n_f").textContent=S[0].length;$("n_l").textContent=S[1].length;$("n_u").textContent=S[2].length;
+ let h="";for(const i of [1,2,0]){if(S[i].length)h+=section(SECK[i],SECN[i],SECC[i],S[i].map(card).join(""),S[i].length);}
+ if(cfbCount===0)h+=`<div class="none">No college football games on Sunday, Oct 18.</div>`;
+ $("games").innerHTML=h||`<div class="none">No games found for Sunday, Oct 18.</div>`;}
+async function poll(){checkVersion();try{const[G,errs]=await fetchAll();if(!G.length&&errs.length)throw new Error(errs.join("; "));render(G);lastOk=new Date();
+ $("ts").innerHTML=`<span class="dot"></span>Updated ${lastOk.toLocaleTimeString("en-US",{timeZone:"America/Los_Angeles",hour:"numeric",minute:"2-digit",second:"2-digit"})} PT`;
+ $("err").innerHTML=errs.length?`<div class="err">⚠️ ${errs.map(esc).join("<br>")}</div>`:"";}
+ catch(e){$("err").innerHTML=`<div class="err">⚠️ Couldn't update scores (${esc(e.message)})${lastOk?" — showing last good update":""}. Retrying in 30s.</div>`;}}
+poll();setInterval(poll,30000);
+</script></body></html>
