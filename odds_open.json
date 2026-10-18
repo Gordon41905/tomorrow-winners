@@ -1,0 +1,66 @@
+{
+ "fetched_pt": "2026-10-17 05:21 PM PT",
+ "source": "ESPN core odds API, DraftKings opening line (provider 100)",
+ "games": {
+  "401872996": {
+   "game": "HOU VS JAX",
+   "open_spread": "HOU -1.5",
+   "open_total": 41.5
+  },
+  "401872999": {
+   "game": "CHI @ ATL",
+   "open_spread": "CHI -3",
+   "open_total": 47.5
+  },
+  "401872997": {
+   "game": "BAL @ CLE",
+   "open_spread": "BAL -6.5",
+   "open_total": 44.5
+  },
+  "401873003": {
+   "game": "TEN @ IND",
+   "open_spread": "IND -3.5",
+   "open_total": 48.5
+  },
+  "401873001": {
+   "game": "NYJ @ NE",
+   "open_spread": "NE -9.5",
+   "open_total": 42.5
+  },
+  "401873000": {
+   "game": "NO @ NYG",
+   "open_spread": "NYG -2.5",
+   "open_total": 45.5
+  },
+  "401872998": {
+   "game": "CAR @ PHI",
+   "open_spread": "PHI -6.5",
+   "open_total": 43.5
+  },
+  "401873002": {
+   "game": "PIT @ TB",
+   "open_spread": "TB -1.5",
+   "open_total": 45.5
+  },
+  "401873004": {
+   "game": "ARI @ LAR",
+   "open_spread": "LAR -13.5",
+   "open_total": 46.5
+  },
+  "401873006": {
+   "game": "LAC @ KC",
+   "open_spread": "KC -2.5",
+   "open_total": 46.5
+  },
+  "401873005": {
+   "game": "BUF @ LV",
+   "open_spread": "BUF -6.5",
+   "open_total": 47.5
+  },
+  "401873007": {
+   "game": "DAL @ GB",
+   "open_spread": "GB -3",
+   "open_total": 51.5
+  }
+ }
+}
