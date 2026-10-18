@@ -21,10 +21,14 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 .ats{font-size:12.5px;color:#a3aec0;margin-top:3px;line-height:1.35}.ats b{color:#dbe2ec;font-weight:700}
 .card.hm{position:relative;padding-right:50px}.card.hm .tx,.card.hm .od{white-space:normal}.mtr{position:absolute;top:14px;bottom:14px;right:10px;width:6px;border-radius:3px;background:#2a3343}.mf{position:absolute;left:0;right:0;border-radius:3px}.mn{position:absolute;right:-4px;width:14px;height:3px;margin-top:-1.5px;border-radius:2px;background:#eef2f7}.m2{position:absolute;right:-2px;width:10px;height:2px;margin-top:-1px;background:#eef2f7;opacity:.35}.md{position:absolute;right:-3px;width:12px;height:12px;margin-top:-6px;border-radius:50%;border:2px solid #0d1015;transition:top .6s}.ml{position:absolute;right:10px;font-size:10px;font-weight:800;line-height:1;transform:translateY(-50%);white-space:nowrap;letter-spacing:-.3px;transition:top .6s}
 .spk{position:absolute;right:5px;bottom:12px;width:38px;text-align:center}.spk svg{display:block;width:38px;height:16px}.spk span{display:block;font-size:9px;font-weight:700;color:#7fa6ff;letter-spacing:-.3px;white-space:nowrap;margin-top:1px}
+.lp{font-size:11px;color:#9aa6b8;margin-top:4px;text-align:right;white-space:nowrap;font-weight:600;letter-spacing:-.1px}.lp b{color:#dbe2ec}.lp .rz{color:#ff8a8d;font-weight:800}
+.hdr{position:relative}.hdr h1{padding-right:38px}.rf{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:1px solid #2c3646;background:#0d1118;color:#9aa6b8;font-size:18px;line-height:30px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0}.rf:active{color:#eef2f7;border-color:#8b97a8}
+#ptr{position:fixed;top:0;left:0;right:0;z-index:50;text-align:center;font-size:13px;font-weight:700;color:#9aa6b8;transform:translateY(-40px);pointer-events:none}#ptr span{display:inline-block;background:#161c26;border:1px solid #2c3646;border-radius:999px;padding:6px 14px;margin-top:8px}
 .none{font-size:13px;color:#8b97a8;margin-top:8px}
 .ftr{margin-top:22px;font-size:12px;color:#7f8ba0;line-height:1.5;text-align:center}
 </style></head><body>
-<div class="hdr"><h1>Sunday Winners · Oct 18</h1><div class="ts" id="ts"><span class="dot"></span>Loading games…</div>
+<div id="ptr"><span>↓ Pull to refresh</span></div>
+<div class="hdr"><button class="rf" id="rf" aria-label="Refresh" title="Refresh">↻</button><h1>Sunday Winners · Oct 18</h1><div class="ts" id="ts"><span class="dot"></span>Loading games…</div>
 <div class="g3"><div class="st"><div class="k">FINAL</div><div class="kv" style="color:#39e27d" id="n_f">–</div></div>
 <div class="st"><div class="k">LIVE</div><div class="kv" style="color:#ff6b6b" id="n_l">–</div></div>
 <div class="st"><div class="k">UPCOMING</div><div class="kv" style="color:#7fa6ff" id="n_u">–</div></div></div>
@@ -32,7 +36,7 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 <div id="games"></div>
 <div class="ftr">Updates every 30 seconds · schedule, scores and lines from ESPN (DraftKings) · "Open" = first DraftKings line, posted at the May schedule release</div>
 <script>
-const APP_VERSION="2026-10-18.9",DATE="20261018";
+const APP_VERSION="2026-10-18.10",DATE="20261018";
 const SRC=[["NFL","https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates="+DATE],
  ["College","https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates="+DATE+"&limit=300&groups=80"]];
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -43,7 +47,8 @@ const tf=(d,z)=>d.toLocaleTimeString("en-US",{timeZone:z,hour:"numeric",minute:"
 function parse(lg,e){const c=e.competitions[0],t=c.competitors||[],h=t.find(x=>x.homeAway==="home")||t[1],a=t.find(x=>x.homeAway==="away")||t[0],st=e.status.type;
  const tm=x=>({full:x.team.displayName||"",name:x.team.shortDisplayName||x.team.displayName,ab:x.team.abbreviation,score:x.score!=null&&x.score!==""?Number(x.score):null,winner:!!x.winner});
  const o=(c.odds||[]).find(x=>x&&(x.details||x.overUnder!=null));
- return{per:e.status?.period||0,clk:e.status?.displayClock||"",od:o?{d:o.details||"",ou:o.overUnder??null,src:o.provider?.name||"ESPN"}:null,id:e.id,lg,start:new Date(e.date),state:st.state,completed:!!st.completed,detail:st.shortDetail||st.detail||"",name:st.name,home:tm(h),away:tm(a),neutral:!!c.neutralSite,venue:c.venue?.fullName||""};}
+ const si=c.situation||null,pt=si&&si.possession?t.find(x=>String(x.team?.id)===String(si.possession)):null;
+ return{sit:si?{dd:si.downDistanceText||"",ab:pt?pt.team.abbreviation:"",lp:si.lastPlay?.text||"",rz:!!si.isRedZone}:null,per:e.status?.period||0,clk:e.status?.displayClock||"",od:o?{d:o.details||"",ou:o.overUnder??null,src:o.provider?.name||"ESPN"}:null,id:e.id,lg,start:new Date(e.date),state:st.state,completed:!!st.completed,detail:st.shortDetail||st.detail||"",name:st.name,home:tm(h),away:tm(a),neutral:!!c.neutralSite,venue:c.venue?.fullName||""};}
 async function fetchAll(){const G=[],errs=[];await Promise.all(SRC.map(async([lg,u])=>{try{const r=await fetch(u+"&t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);const d=await r.json();let ev=d.events||[];if(lg==="College"){if(!ev.length){try{const r2=await fetch(u.replace("&groups=80","")+"&t="+Date.now(),{cache:"no-store"});if(r2.ok)ev=(await r2.json()).events||[];}catch(e){}}cfbCount=ev.length;}ev.forEach(e=>G.push(parse(lg,e)));}catch(e){errs.push(lg+" scores unavailable ("+e.message+")");}}));return[G,errs];}
 const OL=(()=>{try{return JSON.parse(localStorage.getItem("lines")||"{}")}catch(e){return{}}})();
 async function coreOdds(g){try{const p=g.lg==="NFL"?"nfl":"college-football";const r=await fetch(`https://sports.core.api.espn.com/v2/sports/football/leagues/${p}/events/${g.id}/competitions/${g.id}/odds?t=${Date.now()}`,{cache:"no-store"});if(!r.ok)return null;const d=await r.json();const it=(d.items||[]).filter(x=>x.details||x.overUnder!=null);const x=it.find(x=>String(x.provider?.id)==="100")||it[0];if(!x)return null;let open=null;try{const hs=parseFloat(x.homeTeamOdds?.open?.pointSpread?.american),ot=parseFloat(x.open?.total?.american);const sp=isNaN(hs)?"":hs===0?"Even":hs<0?`${g.home.ab} ${hs}`:`${g.away.ab} -${hs}`;if(sp||!isNaN(ot))open={d:sp,ou:isNaN(ot)?null:ot};}catch(e){}
@@ -66,7 +71,7 @@ function atsTxt(g,a,h){const L=OL[g.id]||{},J=OPEN[g.id],op=J?{d:J.open_spread,o
  else{const m=d.match(/^([A-Za-z]+)\s+([+-]?\d+(?:\.\d+)?)$/);if(m){const ab=m[1],ln=Number(m[2]),me=ab===h.ab?mg:ab===a.ab?-mg:null;if(me!=null){const c=me+ln;sp=`<b>${esc(ab)} ${ln>0?"+":""}${ln}</b> (open) ${c>0?"covered":c===0?"push":"didn't cover"}`;}}}
  const ol=op&&op.ou!=null&&op.ou!==""?Number(op.ou):NaN;if(isFinite(ol))ou=`<b>${T>ol?"Over":T<ol?"Under":"Push"} ${ol}</b> (open), ${T}`;
  return `<div class="ats">${sp} · ${ou}</div>`;}
-let MYTOT=[],SCP={};
+let MYTOT=[],SCP={},BETS_OK=null,METERR="";
 const gmin=(p,c)=>{const m=String(c||"").match(/(\d+):(\d+)/),left=m?(+m[1])+(+m[2])/60:0;return p<=4?(p-1)*15+15-left:60+(p-5)*10+10-left;};
 async function fetchScoring(G){await Promise.all(G.filter(g=>sec(g)===1&&myTot(g).length).map(async g=>{try{const p=g.lg==="NFL"?"nfl":"college-football";const r=await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/${p}/summary?event=${g.id}&t=${Date.now()}`,{cache:"no-store"});if(!r.ok)return;const d=await r.json();
  SCP[g.id]=(d.scoringPlays||[]).map(x=>[gmin(x.period?.number||1,x.clock?.displayValue),(+x.awayScore||0)+(+x.homeScore||0)]).filter(x=>isFinite(x[0])&&isFinite(x[1])).sort((a,b)=>a[0]-b[0]);}catch(e){}}));}
@@ -74,10 +79,10 @@ function spark(g,T){const P=SCP[g.id];if(!P||T==null)return"";const now=Math.max
  const at=t=>{let v=0;for(const[x,y]of P)if(x<=t)v=y;return v;},base=at(w0),dl=T-base,ym=Math.max(7,dl),X=t=>((t-w0)/win*36+1).toFixed(1),Y=v=>(15-(v-base)/ym*14).toFixed(1);
  let pts=[`${X(w0)},${Y(base)}`],cur=base;for(const[x,y]of P)if(x>w0&&x<=now){pts.push(`${X(x)},${Y(cur)}`,`${X(x)},${Y(y)}`);cur=y;}pts.push(`${X(now)},${Y(T)}`);
  return `<div class="spk" title="${dl} points in the last ${Math.round(win)} game minutes (${T} total)"><svg viewBox="0 0 38 16"><polyline points="${pts.join(" ")}" fill="none" stroke="#7fa6ff" stroke-width="1.5" stroke-linejoin="round"/></svg><span>+${dl}/${Math.round(win)}m</span></div>`;}
-async function loadMyBets(){try{const r=await fetch("https://gordon41905.github.io/bet-dashboard/bets.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const d=await r.json(),out=[];
+async function loadMyBets(){try{const r=await fetch("https://gordon41905.github.io/bet-dashboard/bets.json?t="+Date.now(),{cache:"no-store"});if(!r.ok){BETS_OK=false;return;}const d=await r.json(),out=[];
  for(const t of d.tickets||[])for(const l of t.legs||[]){if(l.type!=="tot")continue;const n=(d.nfl_games||{})[l.game],c=(d.cfb_games||{})[l.game],e=n||c;if(!e)continue;
   out.push({lg:n?"NFL":"College",home:e[0],away:e[1],date:e[2]||null,line:Number(l.line),ou:l.ou,straight:(t.legs||[]).length===1});}
- MYTOT=out;}catch(e){}}
+ MYTOT=out;BETS_OK=true;}catch(e){BETS_OK=false;}}
 function myTot(g){return MYTOT.filter(b=>b.lg===g.lg&&(!b.date||b.date===DATE)&&(b.lg==="NFL"?(g.home.full===b.home&&g.away.full===b.away):(g.home.full.startsWith(b.home)&&g.away.full.startsWith(b.away))));}
 function meter(g){if(sec(g)!==1)return"";const B=myTot(g);if(!B.length)return"";const S=B.filter(b=>b.straight),P=(S.length?S:B)[0],bet=P.line,ou=P.ou,L=OL[g.id]||{},s=sec(g);
  const num=x=>{const n=x==null||x===""?NaN:Number(x);return isFinite(n)?n:null};
@@ -98,6 +103,13 @@ function meter(g){if(sec(g)!==1)return"";const B=myTot(g);if(!B.length)return"";
  let lb=50,lv=pv;if(lv!=null&&Math.abs(lv-lb)<14){const d=lv<=lb?-1:1;const mid=(lb+lv)/2;lb=mid-7*d;lv=mid+7*d;}
  h+=`<span class="ml" style="top:${lb}%;color:#eef2f7">${f(bet)}</span>`;if(lv!=null)h+=`<span class="ml" style="top:${lv}%;color:${col}">${f(v)}</span>`;
  return h+`</div>`+sk;}
+function lpTxt(g){const S=g.sit;if(!S)return"";const rz=S.rz?' · <span class="rz">red zone</span>':"";
+ if(S.dd)return `<div class="lp">${S.ab?`<b>${esc(S.ab)}</b> ball · `:""}${esc(S.dd)}${rz}</div>`;
+ let t=String(S.lp||"").replace(/\([^)]*\)/g,"").replace(/\s+/g," ").trim();if(!t)return S.rz?`<div class="lp"><span class="rz">Red zone</span></div>`:"";
+ const m=t.match(/^(Official )?Timeout/i)?"Timeout":/^End of (\d\w*|the) ?(Quarter|Half)/i.test(t)?t.replace(/\.$/,""):/^Two-Minute/i.test(t)?"Two-minute warning":null;
+ if(!m){t=t.split(/,| for | at | to |\. /)[0].replace(/\.$/,"");if(t.length>34)t=t.split(" ").slice(0,4).join(" ");}
+ return `<div class="lp">${esc(m||t)}${rz}</div>`;}
+function hardReload(){location.replace(location.pathname+"?v="+Date.now());}
 function sec(g){if(g.state==="post"||g.completed)return 0;if(g.state==="in")return 1;return 2;}
 const SECN=["✅ Final","🔴 Live","🗓️ Upcoming"],SECC=["#3fae7a","#e5484d","#2b6cff"],SECK=["final","live","upcoming"];
 const COLL=(()=>{try{return JSON.parse(localStorage.getItem("collapsed")||"{}")}catch(e){return{}}})();
@@ -115,10 +127,10 @@ function card(g){const s=sec(g),fin=s===0,live=s===1,pre=s===2,a=g.away,h=g.home
  const where=g.neutral&&g.venue?` · ${esc(g.venue)}`:"";
  const lt=liveTxt(g),info=live?(lt?`${esc(g.detail)} · <span class="lv">Live ${esc(lt)}</span>`:`${esc(g.detail)} · kicked off ${tf(g.start,"America/Los_Angeles")} PT`):fin?`${canceled?esc(g.detail)+" · ":""}Kicked off ${kick}${where}`:`Kickoff ${kick}${where}`;
  const fl=fin&&lt?`<span class="wl">Live close ${esc(lt)}</span>`:"";const res=(win?`<div class="win">Winner: ${esc(win.name)}${fl}</div>`:tie?`<div class="win tie">Tie game ${a.score}–${h.score}${fl}</div>`:"")+(win||tie?atsTxt(g,a,h):"");
- const mt=meter(g);
+ let mt="";try{mt=meter(g)}catch(e){METERR=String(e&&e.message||e);}
  return `<div class="card${mt?" hm":""}" style="border-left-color:${color}">${mt}<div class="top"><span class="lg">${g.lg==="NFL"?"NFL":"COLLEGE"}</span><span class="pill" style="background:${color}">${pill}</span></div>
  <div class="tm${cls(a)}"><span class="n">${esc(a.name)}</span>${sc(a)}</div><div class="tm${cls(h)}"><span class="n">${g.neutral?"vs ":"@ "}${esc(h.name)}</span>${sc(h)}</div>
- <div class="tx">${info}</div>${lineTxt(g)}${res}</div>`;}
+ <div class="tx">${info}</div>${lineTxt(g)}${res}${live?(()=>{try{return lpTxt(g)}catch(e){return""}})():""}</div>`;}
 function render(G){const S=[[],[],[]],C=[[],[],[]];G.sort((x,y)=>x.start-y.start||(x.lg<y.lg?-1:1));for(const g of G)(g.lg==="NFL"?S:C)[sec(g)].push(g);
  S[0].reverse();C[0].reverse();
  $("n_f").textContent=S[0].length+C[0].length;$("n_l").textContent=S[1].length+C[1].length;$("n_u").textContent=S[2].length+C[2].length;
@@ -126,8 +138,13 @@ function render(G){const S=[[],[],[]],C=[[],[],[]];G.sort((x,y)=>x.start-y.start
  const cf=[...C[1],...C[2],...C[0]];if(cf.length)h+=section("college","🏈 College football","#9b59ff",cf.map(card).join(""),cf.length);else if(cfbCount===0)h+=`<div class="none">No college games Sunday, Oct 18.</div>`;
  $("games").innerHTML=h||`<div class="none">No games found for Sunday, Oct 18.</div>`;}
 async function poll(){checkVersion();try{try{const r=await fetch("odds_open.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OPEN=j.games||{};}}catch(e){}const[G,errs]=await fetchAll();if(!G.length&&errs.length)throw new Error(errs.join("; "));await lines(G);await liveLines(G);await loadMyBets();await fetchScoring(G);render(G);lastOk=new Date();
- $("ts").innerHTML=`<span class="dot"></span>Updated ${lastOk.toLocaleTimeString("en-US",{timeZone:"America/Los_Angeles",hour:"numeric",minute:"2-digit",second:"2-digit"})} PT`;
+ $("ts").innerHTML=`<span class="dot"></span>Updated ${lastOk.toLocaleTimeString("en-US",{timeZone:"America/Los_Angeles",hour:"numeric",minute:"2-digit",second:"2-digit"})} PT<span style="color:#5b6575"> · v.${APP_VERSION.split(".").pop()}${BETS_OK===false?' · <span style="color:#f0b429">bets not loaded</span>':""}${METERR?' · <span style="color:#f0b429">meter error</span>':""}</span>`;
  $("err").innerHTML=errs.length?`<div class="err">⚠️ ${errs.map(esc).join("<br>")}</div>`:"";}
  catch(e){$("err").innerHTML=`<div class="err">⚠️ Couldn't update scores (${esc(e.message)})${lastOk?" — showing last good update":""}. Retrying in 30s.</div>`;}}
+$("rf").addEventListener("click",hardReload);
+(()=>{let y0=null,dy=0;const P=$("ptr"),sp=P.firstChild;
+ addEventListener("touchstart",e=>{if(scrollY<=0&&e.touches.length===1){y0=e.touches[0].clientY;dy=0;}else y0=null;},{passive:true});
+ addEventListener("touchmove",e=>{if(y0==null)return;dy=e.touches[0].clientY-y0;if(dy<=0||scrollY>0){P.style.transform="translateY(-40px)";return;}const d=Math.min(dy,120);P.style.transform=`translateY(${Math.min(d*.5,30)-10}px)`;sp.textContent=dy>70?"↻ Release to refresh":"↓ Pull to refresh";},{passive:true});
+ addEventListener("touchend",()=>{if(y0!=null&&dy>70&&scrollY<=0){sp.textContent="Refreshing…";hardReload();}else P.style.transform="translateY(-40px)";y0=null;dy=0;},{passive:true});})();
 poll();setInterval(poll,30000);
 </script></body></html>
