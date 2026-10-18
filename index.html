@@ -16,8 +16,8 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 .tm{display:flex;justify-content:space-between;align-items:baseline;font-size:17px;font-weight:700;margin-top:6px;gap:10px}.tm .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tm .s{font-size:19px;font-weight:800;flex:none}
 .tm.w{color:#39e27d}.tm.l{color:#8b97a8}
 .tx{font-size:13px;color:#a3aec0;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.win{font-size:14px;font-weight:800;color:#39e27d;margin-top:6px}.tie{color:#f0b429}
-.od .sep{margin:0 6px;color:#4a5568}.od{font-size:12px;color:#7f8ba0;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.win{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:800;color:#39e27d;margin-top:6px}.tie{color:#f0b429}
+.lv{color:#ffb4b6;font-weight:700}.wl{font-size:12px;color:#7f8ba0;font-weight:600;margin-left:6px}.od .sep{margin:0 6px;color:#4a5568}.od{font-size:12px;color:#7f8ba0;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .none{font-size:13px;color:#8b97a8;margin-top:8px}
 .ftr{margin-top:22px;font-size:12px;color:#7f8ba0;line-height:1.5;text-align:center}
 </style></head><body>
@@ -29,7 +29,7 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 <div id="games"></div>
 <div class="ftr">Updates every 30 seconds · schedule, scores and lines from ESPN (DraftKings) · opening lines as of <span id="opt"></span></div>
 <script>
-const APP_VERSION="2026-10-18.4",DATE="20261018";
+const APP_VERSION="2026-10-18.5",DATE="20261018";
 const SRC=[["NFL","https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates="+DATE],
  ["College","https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates="+DATE+"&limit=300&groups=80"]];
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -49,9 +49,14 @@ async function lines(G){await Promise.all(G.filter(g=>(!g.od&&g.state!=="post")|
  for(const g of G){const L=OL[g.id]||(OL[g.id]={});if(g.od&&(g.od.d||g.od.ou!=null)){L.cur={...g.od,at:now};if(g.state==="pre")L.pre={...g.od,at:now};if(!L.open&&!OPEN[g.id])L.open={...g.od,at:now,firstSeen:true};}}
  try{localStorage.setItem("lines",JSON.stringify(OL))}catch(e){}}
 function fmt(o){if(!o)return"";const p=[];if(o.d)p.push(o.d==="EVEN"?"Even":o.d);if(o.ou!=null)p.push("O/U "+o.ou);return p.join(" · ");}
-function lineTxt(g){const L=OL[g.id]||{},fin=g.state==="post"||g.completed,now=fin?(L.pre||L.cur):(g.od||L.cur);
+async function liveOdds(g){try{const p=g.lg==="NFL"?"nfl":"college-football";const r=await fetch(`https://sports.core.api.espn.com/v2/sports/football/leagues/${p}/events/${g.id}/competitions/${g.id}/odds?t=${Date.now()}`,{cache:"no-store"});if(!r.ok)return null;const d=await r.json();
+ const x=(d.items||[]).find(i=>(String(i.provider?.id)==="200"||/live/i.test(i.provider?.name||""))&&(i.details||i.overUnder!=null||i.spread!=null));if(!x)return null;
+ let sp=x.details||"";if(!sp&&x.spread!=null){const hs=Number(x.spread);sp=hs===0?"Even":hs<0?`${g.home.ab} ${hs}`:`${g.away.ab} -${hs}`;}return{d:sp,ou:x.overUnder??null}}catch(e){return null}}
+async function liveLines(G){const now=Date.now();await Promise.all(G.filter(g=>g.state==="in").map(async g=>{const o=await liveOdds(g);if(o&&(o.d||o.ou!=null)){(OL[g.id]||(OL[g.id]={})).live={...o,at:now};}}));try{localStorage.setItem("lines",JSON.stringify(OL))}catch(e){}}
+function liveTxt(g){const L=(OL[g.id]||{}).live;if(!L)return"";if(g.state==="in"&&Date.now()-L.at>300000)return"";const t=fmt(L);return t?t:"";}
+function lineTxt(g){const L=OL[g.id]||{},fin=g.state==="post"||g.completed,started=g.state!=="pre",now=started?(L.pre||L.cur):(g.od||L.cur);
  const J=OPEN[g.id],op=J?{d:J.open_spread,ou:J.open_total}:(L.copen||L.open||null);const a=fmt(op),b=fmt(now);if(!a&&!b)return"";
- return `<div class="od">${a?`Open ${esc(a)}`:""}${a&&b?`<span class="sep">|</span>`:""}${b?`${fin?"Close":"Now"} ${esc(b)}`:""}</div>`;}
+ return `<div class="od">${a?`Open ${esc(a)}`:""}${a&&b?`<span class="sep">|</span>`:""}${b?`${started?"Close":"Now"} ${esc(b)}`:""}</div>`;}
 function sec(g){if(g.state==="post"||g.completed)return 0;if(g.state==="in")return 1;return 2;}
 const SECN=["✅ Final","🔴 Live","🗓️ Upcoming"],SECC=["#3fae7a","#e5484d","#2b6cff"],SECK=["final","live","upcoming"];
 const COLL=(()=>{try{return JSON.parse(localStorage.getItem("collapsed")||"{}")}catch(e){return{}}})();
@@ -67,8 +72,8 @@ function card(g){const s=sec(g),fin=s===0,live=s===1,pre=s===2,a=g.away,h=g.home
  const kick=`${tf(g.start,"America/Los_Angeles")} PT · ${tf(g.start,"America/New_York")} ET`;
  const sc=x=>pre||x.score==null?"":`<span class="s">${x.score}</span>`;
  const where=g.neutral&&g.venue?` · ${esc(g.venue)}`:"";
- const info=live?`${esc(g.detail)} · kicked off ${tf(g.start,"America/Los_Angeles")} PT`:fin?`${canceled?esc(g.detail)+" · ":""}Kicked off ${kick}${where}`:`Kickoff ${kick}${where}`;
- const res=win?`<div class="win">Winner: ${esc(win.name)}</div>`:tie?`<div class="win tie">Tie game ${a.score}–${h.score}</div>`:"";
+ const lt=liveTxt(g),info=live?(lt?`${esc(g.detail)} · <span class="lv">Live ${esc(lt)}</span>`:`${esc(g.detail)} · kicked off ${tf(g.start,"America/Los_Angeles")} PT`):fin?`${canceled?esc(g.detail)+" · ":""}Kicked off ${kick}${where}`:`Kickoff ${kick}${where}`;
+ const fl=fin&&lt?`<span class="wl">Live close ${esc(lt)}</span>`:"";const res=win?`<div class="win">Winner: ${esc(win.name)}${fl}</div>`:tie?`<div class="win tie">Tie game ${a.score}–${h.score}${fl}</div>`:"";
  return `<div class="card" style="border-left-color:${color}"><div class="top"><span class="lg">${g.lg==="NFL"?"NFL":"COLLEGE"}</span><span class="pill" style="background:${color}">${pill}</span></div>
  <div class="tm${cls(a)}"><span class="n">${esc(a.name)}</span>${sc(a)}</div><div class="tm${cls(h)}"><span class="n">${g.neutral?"vs ":"@ "}${esc(h.name)}</span>${sc(h)}</div>
  <div class="tx">${info}</div>${lineTxt(g)}${res}</div>`;}
@@ -78,7 +83,7 @@ function render(G){const S=[[],[],[]],C=[[],[],[]];G.sort((x,y)=>x.start-y.start
  let h="";for(const i of [1,2,0]){if(S[i].length)h+=section(SECK[i],SECN[i],SECC[i],S[i].map(card).join(""),S[i].length);}
  const cf=[...C[1],...C[2],...C[0]];if(cf.length)h+=section("college","🏈 College football","#9b59ff",cf.map(card).join(""),cf.length);else if(cfbCount===0)h+=`<div class="none">No college games Sunday, Oct 18.</div>`;
  $("games").innerHTML=h||`<div class="none">No games found for Sunday, Oct 18.</div>`;}
-async function poll(){checkVersion();try{try{const r=await fetch("odds_open.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OPEN=j.games||{};$("opt").textContent=j.fetched_pt||"";}}catch(e){}const[G,errs]=await fetchAll();if(!G.length&&errs.length)throw new Error(errs.join("; "));await lines(G);render(G);lastOk=new Date();
+async function poll(){checkVersion();try{try{const r=await fetch("odds_open.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OPEN=j.games||{};$("opt").textContent=j.fetched_pt||"";}}catch(e){}const[G,errs]=await fetchAll();if(!G.length&&errs.length)throw new Error(errs.join("; "));await lines(G);await liveLines(G);render(G);lastOk=new Date();
  $("ts").innerHTML=`<span class="dot"></span>Updated ${lastOk.toLocaleTimeString("en-US",{timeZone:"America/Los_Angeles",hour:"numeric",minute:"2-digit",second:"2-digit"})} PT`;
  $("err").innerHTML=errs.length?`<div class="err">⚠️ ${errs.map(esc).join("<br>")}</div>`:"";}
  catch(e){$("err").innerHTML=`<div class="err">⚠️ Couldn't update scores (${esc(e.message)})${lastOk?" — showing last good update":""}. Retrying in 30s.</div>`;}}
