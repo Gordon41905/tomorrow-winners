@@ -20,7 +20,7 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 .lv{color:#ffb4b6;font-weight:700}.wl{font-size:12px;color:#7f8ba0;font-weight:600;margin-left:6px}.od .sep{margin:0 6px;color:#4a5568}.od{font-size:12px;color:#7f8ba0;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ats{font-size:12.5px;color:#a3aec0;margin-top:3px;line-height:1.35}.ats b{color:#dbe2ec;font-weight:700}
 .card.hm{position:relative;padding-right:50px}.card.hm .tx,.card.hm .od{white-space:normal}.mtr{position:absolute;top:14px;bottom:14px;right:10px;width:6px;border-radius:3px;background:#2a3343}.mf{position:absolute;left:0;right:0;border-radius:3px}.mn{position:absolute;right:-4px;width:14px;height:3px;margin-top:-1.5px;border-radius:2px;background:#eef2f7}.m2{position:absolute;right:-2px;width:10px;height:2px;margin-top:-1px;background:#eef2f7;opacity:.35}.md{position:absolute;right:-3px;width:12px;height:12px;margin-top:-6px;border-radius:50%;border:2px solid #0d1015;transition:top .6s}.ml{position:absolute;right:10px;font-size:10px;font-weight:800;line-height:1;transform:translateY(-50%);white-space:nowrap;letter-spacing:-.3px;transition:top .6s}
-.spk{position:absolute;right:5px;bottom:12px;width:38px;text-align:center}.spk svg{display:block;width:38px;height:16px}.spk span{display:block;font-size:9px;font-weight:700;color:#7fa6ff;letter-spacing:-.3px;white-space:nowrap;margin-top:1px}
+.spk{position:absolute;right:5px;bottom:12px;width:38px;text-align:center}.spk svg{display:block;width:38px;height:16px}.spk.lgr{width:44px;right:4px}.spk.lgr svg{width:38px;margin:0 auto}.spk.lgr span{letter-spacing:-.5px}.spk span{display:block;font-size:9px;font-weight:700;color:#7fa6ff;letter-spacing:-.3px;white-space:nowrap;margin-top:1px}
 .lp{font-size:11px;color:#9aa6b8;margin-top:4px;text-align:right;white-space:nowrap;font-weight:600;letter-spacing:-.1px}.lp b{color:#dbe2ec}.lp .rz{color:#ff8a8d;font-weight:800}
 .hdr{position:relative}.hdr h1{padding-right:38px}.rf{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:1px solid #2c3646;background:#0d1118;color:#9aa6b8;font-size:18px;line-height:30px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0}.rf:active{color:#eef2f7;border-color:#8b97a8}
 #ptr{position:fixed;top:0;left:0;right:0;z-index:50;text-align:center;font-size:13px;font-weight:700;color:#9aa6b8;transform:translateY(-40px);pointer-events:none}#ptr span{display:inline-block;background:#161c26;border:1px solid #2c3646;border-radius:999px;padding:6px 14px;margin-top:8px}
@@ -36,7 +36,7 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 <div id="games"></div>
 <div class="ftr">Updates every 30 seconds · schedule, scores and lines from ESPN (DraftKings) · "Open" = first DraftKings line, posted at the May schedule release</div>
 <script>
-const APP_VERSION="2026-10-18.10",DATE="20261018";
+const APP_VERSION="2026-10-19.1",DATE="20261018";
 const SRC=[["NFL","https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates="+DATE],
  ["College","https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates="+DATE+"&limit=300&groups=80"]];
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -60,7 +60,7 @@ function fmt(o){if(!o)return"";const p=[];if(o.d)p.push(o.d==="EVEN"?"Even":o.d)
 async function liveOdds(g){try{const p=g.lg==="NFL"?"nfl":"college-football";const r=await fetch(`https://sports.core.api.espn.com/v2/sports/football/leagues/${p}/events/${g.id}/competitions/${g.id}/odds?t=${Date.now()}`,{cache:"no-store"});if(!r.ok)return null;const d=await r.json();
  const x=(d.items||[]).find(i=>(String(i.provider?.id)==="200"||/live/i.test(i.provider?.name||""))&&(i.details||i.overUnder!=null||i.spread!=null));if(!x)return null;
  let sp=x.details||"";if(!sp&&x.spread!=null){const hs=Number(x.spread);sp=hs===0?"Even":hs<0?`${g.home.ab} ${hs}`:`${g.away.ab} -${hs}`;}return{d:sp,ou:x.overUnder??null}}catch(e){return null}}
-async function liveLines(G){const now=Date.now();await Promise.all(G.filter(g=>g.state==="in").map(async g=>{const o=await liveOdds(g);if(o&&(o.d||o.ou!=null)){(OL[g.id]||(OL[g.id]={})).live={...o,at:now};}}));try{localStorage.setItem("lines",JSON.stringify(OL))}catch(e){}}
+async function liveLines(G){const now=Date.now();await Promise.all(G.filter(g=>g.state==="in").map(async g=>{const o=await liveOdds(g);if(o&&(o.d||o.ou!=null)){const L=OL[g.id]||(OL[g.id]={});L.live={...o,at:now};const v=o.ou==null||o.ou===""?NaN:Number(o.ou);if(isFinite(v)){const a=L.lh||(L.lh=[]),ls=a[a.length-1];if(!ls||ls[1]!==v){a.push([now,v]);if(a.length>300)a.splice(0,a.length-300);}}}}));try{localStorage.setItem("lines",JSON.stringify(OL))}catch(e){}}
 function liveTxt(g){const L=(OL[g.id]||{}).live;if(!L)return"";if(g.state==="in"&&Date.now()-L.at>300000)return"";const t=fmt(L);return t?t:"";}
 function lineTxt(g){const L=OL[g.id]||{},fin=g.state==="post"||g.completed,started=g.state!=="pre",now=started?(L.pre||L.cur):(g.od||L.cur);
  const J=OPEN[g.id],op=J?{d:J.open_spread,ou:J.open_total}:(L.copen||L.open||null);const a=fmt(op),b=fmt(now);if(!a&&!b)return"";
@@ -84,13 +84,23 @@ async function loadMyBets(){try{const r=await fetch("https://gordon41905.github.
   out.push({lg:n?"NFL":"College",home:e[0],away:e[1],date:e[2]||null,line:Number(l.line),ou:l.ou,straight:(t.legs||[]).length===1});}
  MYTOT=out;BETS_OK=true;}catch(e){BETS_OK=false;}}
 function myTot(g){return MYTOT.filter(b=>b.lg===g.lg&&(!b.date||b.date===DATE)&&(b.lg==="NFL"?(g.home.full===b.home&&g.away.full===b.away):(g.home.full.startsWith(b.home)&&g.away.full.startsWith(b.away))));}
+function lineGraph(S,cv,Y,fv,mr){const now=Date.now();S=S.filter(x=>x[1]!=null&&isFinite(x[1]));if(cv!=null&&!isFinite(cv))cv=null;if(cv==null&&!S.length)return"";
+ const pts=[],t0=S.length?S[0][0]:now-60e3;if(cv!=null)pts.push([Math.min(t0,now-60e3),cv]);for(const x of S)pts.push(x);const cur=pts[pts.length-1][1];pts.push([now,cur]);
+ const ys=pts.map(p=>Y(p[1])),base=cv!=null?Y(cv):ys[0];let lo=Math.min(...ys,base),hi=Math.max(...ys,base);if(hi-lo<mr){const m=(hi+lo)/2;lo=m-mr/2;hi=m+mr/2;}
+ const ta=pts[0][0],X=t=>(1+(t-ta)/Math.max(1,now-ta)*34).toFixed(1),YY=y=>(14.5-(y-lo)/(hi-lo)*13).toFixed(1);
+ const P=[`${X(pts[0][0])},${YY(ys[0])}`];for(let i=1;i<pts.length;i++)P.push(`${X(pts[i][0])},${YY(ys[i-1])}`,`${X(pts[i][0])},${YY(ys[i])}`);
+ const d=Y(cur)-base,col=cv==null||Math.abs(d)<1e-9?"#8b97a8":d>0?"#39e27d":"#ff6b6b",tf=t=>new Date(t).toLocaleTimeString("en-US",{timeZone:"America/Los_Angeles",hour:"numeric",minute:"2-digit"});
+ const tl=`Line movement: close ${cv!=null?fv(cv):"n/a"} → live ${fv(cur)} (${S.length} live sample${S.length===1?"":"s"}${S.length?" since "+tf(S[0][0])+" PT":""}). Green = book moved toward your bet, red = against it.`;
+ return `<div class="spk lgr" title="${esc(tl)}"><svg viewBox="0 0 38 16">${cv!=null?`<line x1="1" x2="37" y1="${YY(base)}" y2="${YY(base)}" stroke="#8b97a8" stroke-width=".7" stroke-dasharray="2 1.5" opacity=".8"/>`:""}<polyline points="${P.join(" ")}" fill="none" stroke="${col}" stroke-width="1.4" stroke-linejoin="round"/><circle cx="${X(now)}" cy="${YY(Y(cur))}" r="2.2" fill="${col}"/></svg><span style="color:${col}">${cv!=null?esc(fv(cv))+"→":""}${esc(fv(cur))}</span></div>`;}
+function wgraph(g,ou){try{if(sec(g)!==1)return"";const L=OL[g.id]||{},n=x=>{const v=x==null||x===""?NaN:Number(x);return isFinite(v)?v:null};
+ return lineGraph(L.lh||[],n((L.pre||{}).ou)??n((g.od||{}).ou),v=>ou==="o"?v:-v,v=>String(v),2);}catch(e){return""}}
 function meter(g){if(sec(g)!==1)return"";const B=myTot(g);if(!B.length)return"";const S=B.filter(b=>b.straight),P=(S.length?S:B)[0],bet=P.line,ou=P.ou,L=OL[g.id]||{},s=sec(g);
  const num=x=>{const n=x==null||x===""?NaN:Number(x);return isFinite(n)?n:null};
  const v=num((L.live||{}).ou)??num((L.pre||L.cur||{}).ou)??num((g.od||{}).ou);
  const sec2=[...new Set(B.map(b=>b.line).filter(x=>x!==bet))],f=x=>Number.isInteger(x)?x+"":x.toFixed(1);
  const T=g.away.score!=null&&g.home.score!=null&&s!==2?g.away.score+g.home.score:null,canc=/POSTPONED|CANCEL|SUSPENDED/.test(g.name||"");
  const res=(ln,o)=>T==null||canc?null:T>ln?(o==="o"?"won":"lost"):null;
- const sk=spark(g,T),mb=sk?' style="bottom:48px"':"";const R=res(bet,ou);if(R){const sc={won:"#1fbf5f",lost:"#e5484d"}[R];const dif=B.filter(b=>b.line!==bet||b.ou!==ou).map(b=>[b,res(b.line,b.ou)]).filter(([b,r])=>r!==R).map(([b,r])=>`${f(b.line)} ${r||"open"}`);
+ const sk=wgraph(g,ou),mb=sk?' style="bottom:48px"':"";const R=res(bet,ou);if(R){const sc={won:"#1fbf5f",lost:"#e5484d"}[R];const dif=B.filter(b=>b.line!==bet||b.ou!==ou).map(b=>[b,res(b.line,b.ou)]).filter(([b,r])=>r!==R).map(([b,r])=>`${f(b.line)} ${r||"open"}`);
   const tl=`Your ${ou==="o"?"over":"under"} ${bet}: ${R} (${T} points so far)${dif.length?" · "+dif.join(", "):""}`;
   return `<div class="mtr" title="${esc(tl)}" style="background:${sc}${sk?";bottom:48px":""}"><span class="ml" style="top:38%;color:${sc}">${R.toUpperCase()}</span><span class="ml" style="top:52%;color:#eef2f7">${T}</span>${dif.map((x,i)=>`<span class="ml" style="top:${66+i*11}%;color:#8b97a8;font-weight:700;font-size:8.5px">${esc(x)}</span>`).join("")}</div>`+sk;}
  const rng=Math.max(8,(v!=null?Math.abs(v-bet):0)+3,...sec2.map(x=>Math.abs(x-bet)+1)),pos=x=>Math.min(100,Math.max(0,(bet+rng-x)/(2*rng)*100));
@@ -137,7 +147,7 @@ function render(G){const S=[[],[],[]],C=[[],[],[]];G.sort((x,y)=>x.start-y.start
  let h="";for(const i of [1,2,0]){if(S[i].length)h+=section(SECK[i],SECN[i],SECC[i],S[i].map(card).join(""),S[i].length);}
  const cf=[...C[1],...C[2],...C[0]];if(cf.length)h+=section("college","🏈 College football","#9b59ff",cf.map(card).join(""),cf.length);else if(cfbCount===0)h+=`<div class="none">No college games Sunday, Oct 18.</div>`;
  $("games").innerHTML=h||`<div class="none">No games found for Sunday, Oct 18.</div>`;}
-async function poll(){checkVersion();try{try{const r=await fetch("odds_open.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OPEN=j.games||{};}}catch(e){}const[G,errs]=await fetchAll();if(!G.length&&errs.length)throw new Error(errs.join("; "));await lines(G);await liveLines(G);await loadMyBets();await fetchScoring(G);render(G);lastOk=new Date();
+async function poll(){checkVersion();try{try{const r=await fetch("odds_open.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OPEN=j.games||{};}}catch(e){}const[G,errs]=await fetchAll();if(!G.length&&errs.length)throw new Error(errs.join("; "));await lines(G);await liveLines(G);await loadMyBets();render(G);lastOk=new Date();
  $("ts").innerHTML=`<span class="dot"></span>Updated ${lastOk.toLocaleTimeString("en-US",{timeZone:"America/Los_Angeles",hour:"numeric",minute:"2-digit",second:"2-digit"})} PT<span style="color:#5b6575"> · v.${APP_VERSION.split(".").pop()}${BETS_OK===false?' · <span style="color:#f0b429">bets not loaded</span>':""}${METERR?' · <span style="color:#f0b429">meter error</span>':""}</span>`;
  $("err").innerHTML=errs.length?`<div class="err">⚠️ ${errs.map(esc).join("<br>")}</div>`:"";}
  catch(e){$("err").innerHTML=`<div class="err">⚠️ Couldn't update scores (${esc(e.message)})${lastOk?" — showing last good update":""}. Retrying in 30s.</div>`;}}
