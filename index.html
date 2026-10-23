@@ -38,12 +38,12 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 <div id="games"></div>
 <div class="ftr">Updates every 30 seconds · schedule, scores and lines from ESPN (DraftKings) · "Open" = first DraftKings line, posted at the May schedule release</div>
 <script>
-const APP_VERSION="2026-10-23.2";
+const APP_VERSION="2026-10-23.3";
 const DATE=new Date().toLocaleDateString("en-CA",{timeZone:"America/Los_Angeles"}).replace(/-/g,"");
 const DATELAB=new Date().toLocaleDateString("en-US",{timeZone:"America/Los_Angeles",weekday:"short",month:"short",day:"numeric"}).replace(",","");
 const SRC=[["NFL","https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"]];
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let lastOk=null,OPEN={},ARCO={},ARCC={},WK=null,LASTG=null;const H1=`NFL · ${DATELAB}`;
+let lastOk=null,OPEN={},ARCO={},ARCC={},WK=null,LASTG=null,CURW=null,H1=`NFL · ${DATELAB}`;
 document.title=H1;document.querySelector("h1").textContent=H1;
 async function checkVersion(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==APP_VERSION){const k="reload_"+v;let st={n:0,t:0};try{st=JSON.parse(sessionStorage.getItem(k)||'{"n":0,"t":0}')}catch(e){}if(st.n<5&&Date.now()-st.t>45000){st.n++;st.t=Date.now();try{sessionStorage.setItem(k,JSON.stringify(st))}catch(e){}location.replace(location.pathname+"?v="+encodeURIComponent(v)+"&r="+Date.now());}}}catch(e){}}
@@ -161,13 +161,14 @@ async function poll(){checkVersion();try{try{const r=await fetch("odds_open.json
  $("err").innerHTML=errs.length?`<div class="err">⚠️ ${errs.map(esc).join("<br>")}</div>`:"";}
  catch(e){$("err").innerHTML=`<div class="err">⚠️ Couldn't update scores (${esc(e.message)})${lastOk?" — showing last good update":""}. Retrying in 30s.</div>`;}}
 $("rf").addEventListener("click",hardReload);
-// NFL archive: past weeks saved in archive/nfl/2026-wkNN.json (fallback: ESPN by week). Default view unchanged.
+// NFL archive: past weeks in archive/nfl/2026-wkNN.json (ESPN fallback). Current week = live; auto-advances with ESPN week number.
 let WKS=[];
 async function loadWeeks(){const L=new Map();try{const r=await fetch("archive/nfl/index.json?t="+Date.now(),{cache:"no-store"});if(r.ok)for(const it of (await r.json()).items||[])L.set(it.week,{w:it.week,label:it.label,detail:it.detail||"",file:it.file});}catch(e){}
- try{const r=await fetch("https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?t="+Date.now(),{cache:"no-store"});if(r.ok){const d=await r.json(),cw=d.week?.number||0,cal=((d.leagues?.[0]?.calendar||[]).find(b=>String(b.value)==="2")||{}).entries||[];
-  for(const en of cal){const w=+en.value;if(w<cw&&!L.has(w))L.set(w,{w,label:en.label||"Week "+w,detail:en.detail||"",file:null});}}}catch(e){}
- WKS=[...L.values()].sort((a,b)=>b.w-a.w);drawWeeks();}
-function drawWeeks(){$("wkp").innerHTML=`<span class="wkl">WEEKS</span><button class="wkb${WK==null?" on":""}" data-w="">${esc(DATELAB)}</button>`+WKS.map(x=>`<button class="wkb${WK===x.w?" on":""}" data-w="${x.w}">${esc(x.label.replace("Week ","Wk "))}</button>`).join("");}
+ try{const r=await fetch("https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?t="+Date.now(),{cache:"no-store"});if(r.ok){const d=await r.json();CURW=d.week?.number||CURW;const cw=CURW||0,cal=((d.leagues?.[0]?.calendar||[]).find(b=>String(b.value)==="2")||{}).entries||[];
+  for(const en of cal){const w=+en.value;if(w&&w<cw&&!L.has(w))L.set(w,{w,label:en.label||"Week "+w,detail:en.detail||"",file:null});}
+  if(cw){H1=`NFL Week ${cw}`;document.title=H1;if(WK==null)document.querySelector("h1").textContent=H1;}}}catch(e){}
+ WKS=[...L.values()].filter(x=>!CURW||x.w<CURW).sort((a,b)=>b.w-a.w);drawWeeks();}
+function drawWeeks(){const cur=CURW?`Wk ${CURW}`:DATELAB;$("wkp").innerHTML=`<span class="wkl">WEEKS</span><button class="wkb${WK==null?" on":""}" data-w="">${esc(cur)}</button>`+WKS.map(x=>`<button class="wkb${WK===x.w?" on":""}" data-w="${x.w}" title="${esc(x.detail||"")}">${esc(x.label.replace("Week ","Wk "))}</button>`).join("");}
 $("wkp").addEventListener("click",e=>{const b=e.target.closest(".wkb");if(!b)return;const w=b.dataset.w===""?null:+b.dataset.w;showWeek(w);});
 async function weekEvents(x){if(x.file){try{const r=await fetch("archive/nfl/"+x.file+"?t="+Date.now(),{cache:"no-store"});if(r.ok)return(await r.json()).events||[];}catch(e){}}
  const r=await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week=${x.w}&dates=2026&t=${Date.now()}`,{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);return(await r.json()).events||[];}
