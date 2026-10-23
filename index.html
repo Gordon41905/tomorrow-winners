@@ -25,6 +25,7 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 .hdr{position:relative}.hdr h1{padding-right:38px}.rf{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:1px solid #2c3646;background:#0d1118;color:#9aa6b8;font-size:18px;line-height:30px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0}.rf:active{color:#eef2f7;border-color:#8b97a8}
 #ptr{position:fixed;top:0;left:0;right:0;z-index:50;text-align:center;font-size:13px;font-weight:700;color:#9aa6b8;transform:translateY(-40px);pointer-events:none}#ptr span{display:inline-block;background:#161c26;border:1px solid #2c3646;border-radius:999px;padding:6px 14px;margin-top:8px}
 .none{font-size:13px;color:#8b97a8;margin-top:8px}
+.wkp{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:10px 0 0;padding-bottom:2px}.wkp::-webkit-scrollbar{display:none}.wkb{flex:none;font:inherit;font-size:12px;font-weight:700;color:#9aa6b8;background:#161c26;border:1px solid #2c3646;border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}.wkb.on{color:#0d1015;background:#eef2f7;border-color:#eef2f7}.wkl{flex:none;font-size:11px;font-weight:800;color:#8b97a8;letter-spacing:1px;align-self:center}
 .ftr{margin-top:22px;font-size:12px;color:#7f8ba0;line-height:1.5;text-align:center}
 </style></head><body>
 <div id="ptr"><span>↓ Pull to refresh</span></div>
@@ -33,14 +34,15 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 <div class="st"><div class="k">LIVE</div><div class="kv" style="color:#ff6b6b" id="n_l">–</div></div>
 <div class="st"><div class="k">UPCOMING</div><div class="kv" style="color:#7fa6ff" id="n_u">–</div></div></div>
 <div id="err"></div></div>
+<div class="wkp" id="wkp"></div>
 <div id="games"></div>
 <div class="ftr">Updates every 30 seconds · schedule, scores and lines from ESPN (DraftKings) · "Open" = first DraftKings line, posted at the May schedule release</div>
 <script>
-const APP_VERSION="2026-10-19.1",DATE="20261018";
+const APP_VERSION="2026-10-22.4",DATE="20261018";
 const SRC=[["NFL","https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates="+DATE],
  ["College","https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates="+DATE+"&limit=300&groups=80"]];
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let lastOk=null,cfbCount=null,OPEN={};
+let lastOk=null,cfbCount=null,OPEN={},ARCO={},ARCC={},WK=null,LASTG=null;const H1=document.querySelector("h1").textContent;
 async function checkVersion(){try{const r=await fetch("version.txt?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const v=(await r.text()).trim();
  if(v&&v!==APP_VERSION){const k="reload_"+v;let st={n:0,t:0};try{st=JSON.parse(sessionStorage.getItem(k)||'{"n":0,"t":0}')}catch(e){}if(st.n<5&&Date.now()-st.t>45000){st.n++;st.t=Date.now();try{sessionStorage.setItem(k,JSON.stringify(st))}catch(e){}location.replace(location.pathname+"?v="+encodeURIComponent(v)+"&r="+Date.now());}}}catch(e){}}
 const tf=(d,z)=>d.toLocaleTimeString("en-US",{timeZone:z,hour:"numeric",minute:"2-digit"});
@@ -62,10 +64,10 @@ async function liveOdds(g){try{const p=g.lg==="NFL"?"nfl":"college-football";con
  let sp=x.details||"";if(!sp&&x.spread!=null){const hs=Number(x.spread);sp=hs===0?"Even":hs<0?`${g.home.ab} ${hs}`:`${g.away.ab} -${hs}`;}return{d:sp,ou:x.overUnder??null}}catch(e){return null}}
 async function liveLines(G){const now=Date.now();await Promise.all(G.filter(g=>g.state==="in").map(async g=>{const o=await liveOdds(g);if(o&&(o.d||o.ou!=null)){const L=OL[g.id]||(OL[g.id]={});L.live={...o,at:now};const v=o.ou==null||o.ou===""?NaN:Number(o.ou);if(isFinite(v)){const a=L.lh||(L.lh=[]),ls=a[a.length-1];if(!ls||ls[1]!==v){a.push([now,v]);if(a.length>300)a.splice(0,a.length-300);}}}}));try{localStorage.setItem("lines",JSON.stringify(OL))}catch(e){}}
 function liveTxt(g){const L=(OL[g.id]||{}).live;if(!L)return"";if(g.state==="in"&&Date.now()-L.at>300000)return"";const t=fmt(L);return t?t:"";}
-function lineTxt(g){const L=OL[g.id]||{},fin=g.state==="post"||g.completed,started=g.state!=="pre",now=started?(L.pre||L.cur):(g.od||L.cur);
- const J=OPEN[g.id],op=J?{d:J.open_spread,ou:J.open_total}:(L.copen||L.open||null);const a=fmt(op),b=fmt(now);if(!a&&!b)return"";
+function lineTxt(g){const L=OL[g.id]||{},fin=g.state==="post"||g.completed,started=g.state!=="pre",now=started?(L.pre||L.cur||ARCC[g.id]):(g.od||L.cur);
+ const J=OPEN[g.id]||ARCO[g.id],op=J?{d:J.open_spread,ou:J.open_total}:(L.copen||L.open||null);const a=fmt(op),b=fmt(now);if(!a&&!b)return"";
  return `<div class="od">${a?`Open ${esc(a)}`:""}${a&&b?`<span class="sep">|</span>`:""}${b?`${started?"Close":"Now"} ${esc(b)}`:""}</div>`;}
-function atsTxt(g,a,h){const L=OL[g.id]||{},J=OPEN[g.id],op=J?{d:J.open_spread,ou:J.open_total}:(L.copen||null);const mg=h.score-a.score,T=a.score+h.score;
+function atsTxt(g,a,h){const L=OL[g.id]||{},J=OPEN[g.id]||ARCO[g.id],op=J?{d:J.open_spread,ou:J.open_total}:(L.copen||null);const mg=h.score-a.score,T=a.score+h.score;
  let sp="spread open n/a",ou="O/U open n/a";const d=op&&op.d!=null?String(op.d).trim():"";
  if(/^(even|pk|pick)/i.test(d)){const w=mg>0?h.ab:mg<0?a.ab:null;sp=w?`PK (open): ${esc(w)} covered`:"PK (open): push";}
  else{const m=d.match(/^([A-Za-z]+)\s+([+-]?\d+(?:\.\d+)?)$/);if(m){const ab=m[1],ln=Number(m[2]),me=ab===h.ab?mg:ab===a.ab?-mg:null;if(me!=null){const c=me+ln;sp=`<b>${esc(ab)} ${ln>0?"+":""}${ln}</b> (open) ${c>0?"covered":c===0?"push":"didn't cover"}`;}}}
@@ -141,7 +143,7 @@ function card(g){const s=sec(g),fin=s===0,live=s===1,pre=s===2,a=g.away,h=g.home
  return `<div class="card${mt?" hm":""}" style="border-left-color:${color}">${mt}<div class="top"><span class="lg">${g.lg==="NFL"?"NFL":"COLLEGE"}</span><span class="pill" style="background:${color}">${pill}</span></div>
  <div class="tm${cls(a)}"><span class="n">${esc(a.name)}</span>${sc(a)}</div><div class="tm${cls(h)}"><span class="n">${g.neutral?"vs ":"@ "}${esc(h.name)}</span>${sc(h)}</div>
  <div class="tx">${info}</div>${lineTxt(g)}${res}${live?(()=>{try{return lpTxt(g)}catch(e){return""}})():""}</div>`;}
-function render(G){const S=[[],[],[]],C=[[],[],[]];G.sort((x,y)=>x.start-y.start||(x.lg<y.lg?-1:1));for(const g of G)(g.lg==="NFL"?S:C)[sec(g)].push(g);
+function render(G){LASTG=G;if(WK!=null)return;const S=[[],[],[]],C=[[],[],[]];G.sort((x,y)=>x.start-y.start||(x.lg<y.lg?-1:1));for(const g of G)(g.lg==="NFL"?S:C)[sec(g)].push(g);
  S[0].reverse();C[0].reverse();
  $("n_f").textContent=S[0].length+C[0].length;$("n_l").textContent=S[1].length+C[1].length;$("n_u").textContent=S[2].length+C[2].length;
  let h="";for(const i of [1,2,0]){if(S[i].length)h+=section(SECK[i],SECN[i],SECC[i],S[i].map(card).join(""),S[i].length);}
@@ -152,6 +154,28 @@ async function poll(){checkVersion();try{try{const r=await fetch("odds_open.json
  $("err").innerHTML=errs.length?`<div class="err">⚠️ ${errs.map(esc).join("<br>")}</div>`:"";}
  catch(e){$("err").innerHTML=`<div class="err">⚠️ Couldn't update scores (${esc(e.message)})${lastOk?" — showing last good update":""}. Retrying in 30s.</div>`;}}
 $("rf").addEventListener("click",hardReload);
+// NFL archive: past weeks saved in archive/nfl/2026-wkNN.json (fallback: ESPN by week). Default view unchanged.
+let WKS=[];
+async function loadWeeks(){const L=new Map();try{const r=await fetch("archive/nfl/index.json?t="+Date.now(),{cache:"no-store"});if(r.ok)for(const it of (await r.json()).items||[])L.set(it.week,{w:it.week,label:it.label,detail:it.detail||"",file:it.file});}catch(e){}
+ try{const r=await fetch("https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?t="+Date.now(),{cache:"no-store"});if(r.ok){const d=await r.json(),cw=d.week?.number||0,cal=((d.leagues?.[0]?.calendar||[]).find(b=>String(b.value)==="2")||{}).entries||[];
+  for(const en of cal){const w=+en.value;if(w<cw&&!L.has(w))L.set(w,{w,label:en.label||"Week "+w,detail:en.detail||"",file:null});}}}catch(e){}
+ WKS=[...L.values()].sort((a,b)=>b.w-a.w);drawWeeks();}
+function drawWeeks(){$("wkp").innerHTML=`<span class="wkl">WEEKS</span><button class="wkb${WK==null?" on":""}" data-w="">Oct 18</button>`+WKS.map(x=>`<button class="wkb${WK===x.w?" on":""}" data-w="${x.w}">${esc(x.label.replace("Week ","Wk "))}</button>`).join("");}
+$("wkp").addEventListener("click",e=>{const b=e.target.closest(".wkb");if(!b)return;const w=b.dataset.w===""?null:+b.dataset.w;showWeek(w);});
+async function weekEvents(x){if(x.file){try{const r=await fetch("archive/nfl/"+x.file+"?t="+Date.now(),{cache:"no-store"});if(r.ok)return(await r.json()).events||[];}catch(e){}}
+ const r=await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week=${x.w}&dates=2026&t=${Date.now()}`,{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);return(await r.json()).events||[];}
+async function showWeek(w){WK=w;drawWeeks();ARCO={};ARCC={};
+ if(w==null){document.querySelector("h1").textContent=H1;if(LASTG)render(LASTG);poll();return;}
+ const x=WKS.find(y=>y.w===w);if(!x)return;document.querySelector("h1").textContent=`NFL ${x.label} · Finals`;$("games").innerHTML=`<div class="none">Loading ${esc(x.label)}…</div>`;
+ try{const ev=await weekEvents(x);if(WK!==w)return;
+  for(const e of ev){const o=e.odds;if(o){if(o.open)ARCO[e.id]={open_spread:o.open.d,open_total:o.open.ou};if(o.close)ARCC[e.id]={d:o.close.d,ou:o.close.ou};}}
+  const G=ev.map(e=>parse("NFL",e)).filter(g=>sec(g)===0).sort((a,b)=>a.start-b.start),D=new Map();
+  for(const g of G){const k=g.start.toLocaleDateString("en-US",{timeZone:"America/Los_Angeles",weekday:"short",month:"short",day:"numeric"});if(!D.has(k))D.set(k,[]);D.get(k).push(g);}
+  $("n_f").textContent=G.length;$("n_l").textContent=0;$("n_u").textContent=0;
+  let h="";for(const[k,L]of D)h+=section("wk"+w+"_"+k,"✅ "+k,"#3fae7a",L.map(card).join(""),L.length);
+  $("games").innerHTML=h||`<div class="none">No finals for ${esc(x.label)}.</div>`;}
+ catch(e){if(WK===w)$("games").innerHTML=`<div class="err">⚠️ Couldn't load ${esc(x.label)} (${esc(e.message)})</div>`;}}
+loadWeeks();
 (()=>{let y0=null,dy=0;const P=$("ptr"),sp=P.firstChild;
  addEventListener("touchstart",e=>{if(scrollY<=0&&e.touches.length===1){y0=e.touches[0].clientY;dy=0;}else y0=null;},{passive:true});
  addEventListener("touchmove",e=>{if(y0==null)return;dy=e.touches[0].clientY-y0;if(dy<=0||scrollY>0){P.style.transform="translateY(-40px)";return;}const d=Math.min(dy,120);P.style.transform=`translateY(${Math.min(d*.5,30)-10}px)`;sp.textContent=dy>70?"↻ Release to refresh":"↓ Pull to refresh";},{passive:true});
