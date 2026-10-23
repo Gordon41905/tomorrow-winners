@@ -38,7 +38,7 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 <div id="games"></div>
 <div class="ftr">Updates every 30 seconds · schedule, scores and lines from ESPN (DraftKings) · "Open" = first DraftKings line, posted at the May schedule release</div>
 <script>
-const APP_VERSION="2026-10-23.5";
+const APP_VERSION="2026-10-23.6";
 const DATE=new Date().toLocaleDateString("en-CA",{timeZone:"America/Los_Angeles"}).replace(/-/g,"");
 const DATELAB=new Date().toLocaleDateString("en-US",{timeZone:"America/Los_Angeles",weekday:"short",month:"short",day:"numeric"}).replace(",","");
 const SRC=[["NFL","https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"]];
@@ -155,36 +155,42 @@ function card(g){const s=sec(g),fin=s===0,live=s===1,pre=s===2,a=g.away,h=g.home
  <div class="tm${cls(a)}"><span class="n">${esc(a.name)}${a.record?`<span class="rec">(${esc(a.record)})</span>`:""}</span>${sc(a)}</div><div class="tm${cls(h)}"><span class="n">${g.neutral?"vs ":"@ "}${esc(h.name)}${h.record?`<span class="rec">(${esc(h.record)})</span>`:""}</span>${sc(h)}</div>
  <div class="tx">${info}</div>${lineTxt(g)}${res}${live?(()=>{try{return lpTxt(g)}catch(e){return""}})():""}</div>`;}
 function render(G){LASTG=G;if(WK!=null)return;const S=[[],[],[]];G.sort((x,y)=>x.start-y.start);for(const g of G)if(g.lg==="NFL")S[sec(g)].push(g);
- S[0].reverse();
  $("n_f").textContent=S[0].length;$("n_l").textContent=S[1].length;$("n_u").textContent=S[2].length;
- let h="";for(const i of [1,2,0]){if(S[i].length)h+=section(SECK[i],SECN[i],SECC[i],i===2?upcomingBody(S[i]):S[i].map(card).join(""),S[i].length);}
- $("games").innerHTML=h||`<div class="none">No NFL games found.</div>`;}
+ // Live view: Live + Upcoming only. Completed games live in the week picker (incl. current week).
+ let h="";for(const i of [1,2]){if(S[i].length)h+=section(SECK[i],SECN[i],SECC[i],i===2?upcomingBody(S[i]):S[i].map(card).join(""),S[i].length);}
+ $("games").innerHTML=h||`<div class="none">No live or upcoming NFL games — open a week above for finals.</div>`;}
 async function poll(){checkVersion();try{try{const r=await fetch("odds_open.json?t="+Date.now(),{cache:"no-store"});if(r.ok){const j=await r.json();OPEN=j.games||{};}}catch(e){}const[G,errs]=await fetchAll();if(!G.length&&errs.length)throw new Error(errs.join("; "));await lines(G);await liveLines(G);await loadMyBets();render(G);lastOk=new Date();
  $("ts").innerHTML=`<span class="dot"></span>Updated ${lastOk.toLocaleTimeString("en-US",{timeZone:"America/Los_Angeles",hour:"numeric",minute:"2-digit",second:"2-digit"})} PT<span style="color:#5b6575"> · v.${APP_VERSION.split(".").pop()}${BETS_OK===false?' · <span style="color:#f0b429">bets not loaded</span>':""}${METERR?' · <span style="color:#f0b429">meter error</span>':""}</span>`;
  $("err").innerHTML=errs.length?`<div class="err">⚠️ ${errs.map(esc).join("<br>")}</div>`:"";}
  catch(e){$("err").innerHTML=`<div class="err">⚠️ Couldn't update scores (${esc(e.message)})${lastOk?" — showing last good update":""}. Retrying in 30s.</div>`;}}
 $("rf").addEventListener("click",hardReload);
-// NFL archive: past weeks in archive/nfl/2026-wkNN.json (ESPN fallback). Current week = live; auto-advances with ESPN week number.
+// NFL archive: weeks in archive/nfl/2026-wkNN.json (ESPN fallback). Live view = Live+Upcoming; week picker (incl. current) = full slate.
 let WKS=[];
 async function loadWeeks(){const L=new Map();try{const r=await fetch("archive/nfl/index.json?t="+Date.now(),{cache:"no-store"});if(r.ok)for(const it of (await r.json()).items||[])L.set(it.week,{w:it.week,label:it.label,detail:it.detail||"",file:it.file});}catch(e){}
  try{const r=await fetch("https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?t="+Date.now(),{cache:"no-store"});if(r.ok){const d=await r.json();CURW=d.week?.number||CURW;const cw=CURW||0,cal=((d.leagues?.[0]?.calendar||[]).find(b=>String(b.value)==="2")||{}).entries||[];
-  for(const en of cal){const w=+en.value;if(w&&w<cw&&!L.has(w))L.set(w,{w,label:en.label||"Week "+w,detail:en.detail||"",file:null});}
+  for(const en of cal){const w=+en.value;if(w&&w<=cw&&!L.has(w))L.set(w,{w,label:en.label||"Week "+w,detail:en.detail||"",file:null});}
+  // Ensure current week is selectable (ESPN fallback via file=null) even if calendar miss
+  if(cw&&!L.has(cw)){const en=cal.find(e=>+e.value===cw);L.set(cw,{w:cw,label:(en&&en.label)||("Week "+cw),detail:(en&&en.detail)||"",file:null});}
   if(cw){H1=`NFL Week ${cw}`;document.title=H1;if(WK==null)document.querySelector("h1").textContent=H1;}}}catch(e){}
- WKS=[...L.values()].filter(x=>!CURW||x.w<CURW).sort((a,b)=>b.w-a.w);drawWeeks();}
-function drawWeeks(){const cur=CURW?`Wk ${CURW}`:DATELAB;$("wkp").innerHTML=`<span class="wkl">WEEKS</span><button class="wkb${WK==null?" on":""}" data-w="">${esc(cur)}</button>`+WKS.map(x=>`<button class="wkb${WK===x.w?" on":""}" data-w="${x.w}" title="${esc(x.detail||"")}">${esc(x.label.replace("Week ","Wk "))}</button>`).join("");}
+ WKS=[...L.values()].filter(x=>!CURW||x.w<=CURW).sort((a,b)=>b.w-a.w);drawWeeks();}
+function drawWeeks(){const cur="Live";$("wkp").innerHTML=`<span class="wkl">WEEKS</span><button class="wkb${WK==null?" on":""}" data-w="">${esc(cur)}</button>`+WKS.map(x=>`<button class="wkb${WK===x.w?" on":""}" data-w="${x.w}" title="${esc(x.detail||"")}">${esc(x.label.replace("Week ","Wk "))}</button>`).join("");}
 $("wkp").addEventListener("click",e=>{const b=e.target.closest(".wkb");if(!b)return;const w=b.dataset.w===""?null:+b.dataset.w;showWeek(w);});
 async function weekEvents(x){if(x.file){try{const r=await fetch("archive/nfl/"+x.file+"?t="+Date.now(),{cache:"no-store"});if(r.ok)return(await r.json()).events||[];}catch(e){}}
  const r=await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week=${x.w}&dates=2026&t=${Date.now()}`,{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);return(await r.json()).events||[];}
 async function showWeek(w){WK=w;drawWeeks();ARCO={};ARCC={};
  if(w==null){document.querySelector("h1").textContent=H1;if(LASTG)render(LASTG);poll();return;}
- const x=WKS.find(y=>y.w===w);if(!x)return;document.querySelector("h1").textContent=`NFL ${x.label} · Finals`;$("games").innerHTML=`<div class="none">Loading ${esc(x.label)}…</div>`;
+ const x=WKS.find(y=>y.w===w);if(!x)return;const ttl=x.detail?`NFL ${x.label} · ${x.detail}`:`NFL ${x.label}`;
+ document.querySelector("h1").textContent=ttl;$("games").innerHTML=`<div class="none">Loading ${esc(x.label)}…</div>`;
  try{const ev=await weekEvents(x);if(WK!==w)return;
   for(const e of ev){const o=e.odds;if(o){if(o.open)ARCO[e.id]={open_spread:o.open.d,open_total:o.open.ou};if(o.close)ARCC[e.id]={d:o.close.d,ou:o.close.ou};}}
-  const G=ev.map(e=>parse("NFL",e)).filter(g=>sec(g)===0).sort((a,b)=>a.start-b.start),D=new Map();
-  for(const g of G){const k=g.start.toLocaleDateString("en-US",{timeZone:"America/Los_Angeles",weekday:"short",month:"short",day:"numeric"});if(!D.has(k))D.set(k,[]);D.get(k).push(g);}
-  $("n_f").textContent=G.length;$("n_l").textContent=0;$("n_u").textContent=0;
-  let h="";for(const[k,L]of D)h+=section("wk"+w+"_"+k,"✅ "+k,"#3fae7a",L.map(card).join(""),L.length);
-  $("games").innerHTML=h||`<div class="none">No finals for ${esc(x.label)}.</div>`;}
+  // Full week slate together (finals + live + upcoming), grouped by PT day
+  const G=ev.map(e=>parse("NFL",e)).sort((a,b)=>a.start-b.start),D=new Map(),S=[0,0,0];
+  for(const g of G){S[sec(g)]++;const k=g.start.toLocaleDateString("en-US",{timeZone:"America/Los_Angeles",weekday:"short",month:"short",day:"numeric"});if(!D.has(k))D.set(k,[]);D.get(k).push(g);}
+  $("n_f").textContent=S[0];$("n_l").textContent=S[1];$("n_u").textContent=S[2];
+  let h="";for(const[k,L]of D){const allF=L.every(g=>sec(g)===0),anyL=L.some(g=>sec(g)===1);
+   const lab=(allF?"✅ ":anyL?"🔴 ":"🗓️ ")+k,col=allF?"#3fae7a":anyL?"#e5484d":"#2b6cff";
+   h+=section("wk"+w+"_"+k,lab,col,L.map(card).join(""),L.length);}
+  $("games").innerHTML=h||`<div class="none">No games for ${esc(x.label)}.</div>`;}
  catch(e){if(WK===w)$("games").innerHTML=`<div class="err">⚠️ Couldn't load ${esc(x.label)} (${esc(e.message)})</div>`;}}
 loadWeeks();
 (()=>{let y0=null,dy=0;const P=$("ptr"),sp=P.firstChild;
