@@ -38,7 +38,7 @@ h1{font-size:22px;font-weight:800}.ts{font-size:13px;color:#9aa6b8;margin:3px 0 
 <div id="games"></div>
 <div class="ftr">Updates every 30 seconds · schedule, scores and lines from ESPN (DraftKings) · "Open" = first DraftKings line, posted at the May schedule release</div>
 <script>
-const APP_VERSION="2026-10-23.6";
+const APP_VERSION="2026-10-23.7";
 const DATE=new Date().toLocaleDateString("en-CA",{timeZone:"America/Los_Angeles"}).replace(/-/g,"");
 const DATELAB=new Date().toLocaleDateString("en-US",{timeZone:"America/Los_Angeles",weekday:"short",month:"short",day:"numeric"}).replace(",","");
 const SRC=[["NFL","https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"]];
@@ -145,7 +145,7 @@ function card(g){const s=sec(g),fin=s===0,live=s===1,pre=s===2,a=g.away,h=g.home
  const cls=x=>win?(x===win?" w":" l"):"";
  const color=canceled?"#8a63d2":fin?(tie?"#f0b429":"#1fbf5f"):live?"#e5484d":"#2b6cff";
  const pill=canceled?"NO GAME":fin?"FINAL":live?"LIVE":"SCHEDULED";
- const kick=`${tf(g.start,"America/Los_Angeles")} PT · ${tf(g.start,"America/New_York")} ET`;
+ const kick=`${tf(g.start,"America/Los_Angeles")} PT`;
  const sc=x=>pre||x.score==null?"":`<span class="s">${x.score}</span>`;
  const where=g.neutral&&g.venue?` · ${esc(g.venue)}`:"";
  const lt=liveTxt(g),info=live?(lt?`${esc(g.detail)} · <span class="lv">Live ${esc(lt)}</span>`:`${esc(g.detail)} · kicked off ${tf(g.start,"America/Los_Angeles")} PT`):fin?`${canceled?esc(g.detail)+" · ":""}Kicked off ${kick}${where}`:`Kickoff ${kick}${where}`;
