@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-23 11:31 AM PT",
+ "updated": "2026-10-27 10:04 AM PT",
  "items": [
   {
    "file": "2026-wk01.json",
@@ -46,6 +46,14 @@
    "week": 6,
    "label": "Week 6",
    "detail": "Oct 14-20",
+   "date": null,
+   "games": 14
+  },
+  {
+   "file": "2026-wk07.json",
+   "week": 7,
+   "label": "Week 7",
+   "detail": "Oct 21-27",
    "date": null,
    "games": 14
   }
